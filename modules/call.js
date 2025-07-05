@@ -19,7 +19,7 @@ articipantInfo.meetingId}`);
         raisedHands: meeting.getRaisedHands()
       });
 
-      console.log(`${participant.name} raised hand in meeting ${participantInfo.meetingId}`);
+      console.log(\`${participant.name} raised hand in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('lower-hand', () => {
@@ -40,7 +40,7 @@ articipantInfo.meetingId}`);
         raisedHands: meeting.getRaisedHands()
       });
 
-      console.log(`${participant.name} lowered hand in meeting ${participantInfo.meetingId}`);
+      console.log(\`${participant.name} lowered hand in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('start-screen-share', (data) => {
@@ -58,7 +58,7 @@ articipantInfo.meetingId}`);
         participantName: meeting.participants.get(socket.id)?.name
       });
 
-      console.log(`Screen share started by ${socket.id} in meeting ${participantInfo.meetingId}`);
+      console.log(\`Screen share started by ${socket.id} in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('stop-screen-share', () => {
@@ -74,7 +74,7 @@ articipantInfo.meetingId}`);
         participantId: socket.id
       });
 
-      console.log(`Screen share stopped by ${socket.id} in meeting ${participantInfo.meetingId}`);
+      console.log(\`Screen share stopped by ${socket.id} in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('spotlight-participant', (data) => {
@@ -97,7 +97,7 @@ articipantInfo.meetingId}`);
         reason: 'manual'
       });
 
-      console.log(`Participant ${targetSocketId} spotlighted in meeting ${participantInfo.meetingId}`);
+      console.log(\`Participant ${targetSocketId} spotlighted in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('remove-spotlight', () => {
@@ -117,7 +117,7 @@ articipantInfo.meetingId}`);
         participants: Array.from(meeting.participants.values())
       });
 
-      console.log(`Spotlight removed in meeting ${participantInfo.meetingId}`);
+      console.log(\`Spotlight removed in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('pin-participant', (data) => {
@@ -130,7 +130,7 @@ articipantInfo.meetingId}`);
         pinnedParticipant: targetSocketId
       });
 
-      console.log(`Participant ${socket.id} pinned ${targetSocketId}`);
+      console.log(\`Participant ${socket.id} pinned ${targetSocketId}`);
     });
 
     socket.on('mute-participant', (data) => {
@@ -159,7 +159,7 @@ articipantInfo.meetingId}`);
           participants: Array.from(meeting.participants.values())
         });
 
-        console.log(`Participant ${targetSocketId} ${targetParticipant.isMuted ? 'muted' : 'unmuted'} in meeting ${participantInfo.meetingId}`);
+        console.log(\`Participant ${targetSocketId} ${targetParticipant.isMuted ? 'muted' : 'unmuted'} in meeting ${participantInfo.meetingId}`);
       }
     });
 
@@ -184,7 +184,7 @@ articipantInfo.meetingId}`);
         participants: Array.from(meeting.participants.values())
       });
 
-      console.log(`Participant ${targetSocketId} made co-host in meeting ${participantInfo.meetingId}`);
+      console.log(\`Participant ${targetSocketId} made co-host in meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('kick-participant', (data) => {
@@ -222,7 +222,7 @@ articipantInfo.meetingId}`);
         targetSocket.disconnect();
       }
 
-      console.log(`Participant ${targetSocketId} kicked from meeting ${participantInfo.meetingId}`);
+      console.log(\`Participant ${targetSocketId} kicked from meeting ${participantInfo.meetingId}`);
     });
 
     socket.on('toggle-mic', (data) => {
@@ -283,7 +283,7 @@ articipantInfo.meetingId}`);
             
             meetings.delete(participantInfo.meetingId);
             
-            console.log(`Meeting ${participantInfo.meetingId} ended - host disconnected`);
+            console.log(\`Meeting ${participantInfo.meetingId} ended - host disconnected`);
           } else {
             socket.to(participantInfo.meetingId).emit('participant-left', {
               socketId: socket.id,
@@ -291,7 +291,7 @@ articipantInfo.meetingId}`);
               participants: Array.from(meeting.participants.values())
             });
             
-            console.log(`Participant ${socket.id} left meeting ${participantInfo.meetingId}`);
+            console.log(\`Participant ${socket.id} left meeting ${participantInfo.meetingId}`);
           }
         }
         
@@ -299,32 +299,6 @@ articipantInfo.meetingId}`);
       }
       
       console.log('User disconnected:', socket.id);
-    });
-
-    // Handle meeting permission updates
-    socket.on('update-meeting-permissions', (data) => {
-      const participantInfo = participants.get(socket.id);
-      if (!participantInfo) return;
-      
-      const meeting = meetings.get(participantInfo.meetingId);
-      if (!meeting || !meeting.canPerformHostAction(socket.id)) {
-        socket.emit('action-error', { message: 'Only host can change meeting permissions' });
-        return;
-      }
-
-      const participant = meeting.participants.get(socket.id);
-      if (!participant) return;
-
-      // Update meeting permissions
-      meeting.permissions = data.permissions;
-      
-      // Broadcast permission changes to all participants
-      io.to(participantInfo.meetingId).emit('meeting-permissions-updated', {
-        permissions: data.permissions,
-        changedBy: participant.name
-      });
-
-      console.log(`Meeting permissions updated by ${participant.name} in meeting ${participantInfo.meetingId}:`, data.permissions);
     });
   });
 
