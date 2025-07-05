@@ -397,7 +397,7 @@ export const setupSocketIO = (server) => {
         spotlightedParticipant: meeting.spotlightedParticipant,
         raisedHands: meeting.getRaisedHands(),
         iceServers: meeting.iceServers,
-        isLocked: meeting.isLocked
+        isLocked: meeting.isLocked,
         permissions: meeting.getPermissions()
       });
 
@@ -436,7 +436,7 @@ export const setupSocketIO = (server) => {
         screenShares: Array.from(meeting.screenShares.entries()),
         raisedHands: meeting.getRaisedHands(),
         iceServers: meeting.iceServers,
-        isLocked: meeting.isLocked
+        isLocked: meeting.isLocked,
         permissions: meeting.getPermissions()
       });
 
