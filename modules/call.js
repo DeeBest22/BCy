@@ -300,6 +300,32 @@ articipantInfo.meetingId}`);
       
       console.log('User disconnected:', socket.id);
     });
+
+    // Handle meeting permission updates
+    socket.on('update-meeting-permissions', (data) => {
+      const participantInfo = participants.get(socket.id);
+      if (!participantInfo) return;
+      
+      const meeting = meetings.get(participantInfo.meetingId);
+      if (!meeting || !meeting.canPerformHostAction(socket.id)) {
+        socket.emit('action-error', { message: 'Only host can change meeting permissions' });
+        return;
+      }
+
+      const participant = meeting.participants.get(socket.id);
+      if (!participant) return;
+
+      // Update meeting permissions
+      meeting.permissions = data.permissions;
+      
+      // Broadcast permission changes to all participants
+      io.to(participantInfo.meetingId).emit('meeting-permissions-updated', {
+        permissions: data.permissions,
+        changedBy: participant.name
+      });
+
+      console.log(`Meeting permissions updated by ${participant.name} in meeting ${participantInfo.meetingId}:`, data.permissions);
+    });
   });
 
   return { io, setupMeetingRoutes };

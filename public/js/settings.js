@@ -50,6 +50,13 @@ document.addEventListener('DOMContentLoaded', function() {
   // Save settings
   if (saveSettings && settingsModal) {
     saveSettings.addEventListener('click', () => {
+      // Get current permission states
+      const chatEnabled = document.querySelector('#chat .setting-item:first-child input[type="checkbox"]')?.checked ?? true;
+      const fileSharing = document.querySelector('#chat .setting-item:nth-child(3) input[type="checkbox"]')?.checked ?? true;
+      const emojiReactions = document.querySelector('#chat .setting-item:nth-child(4) input[type="checkbox"]')?.checked ?? true;
+      
+      console.log('Saving settings:', { chatEnabled, fileSharing, emojiReactions });
+      
       // Show feedback toast
       const toast = document.createElement('div');
       toast.className = 'toast-notification';

@@ -640,9 +640,11 @@
 
         setupPermissionControls() {
           // Chat enable/disable toggle
-          const chatToggle = document.querySelector('#chat input[type="checkbox"]:first-of-type');
+          const chatToggle = document.querySelector('#chat .setting-item:first-child input[type="checkbox"]');
           if (chatToggle) {
+            console.log('Chat toggle found, adding event listener');
             chatToggle.addEventListener('change', (e) => {
+              console.log('Chat toggle changed:', e.target.checked);
               this.updatePermission('chatEnabled', e.target.checked);
             });
           }
@@ -650,7 +652,9 @@
           // File sharing toggle
           const fileToggle = document.querySelector('#chat .setting-item:nth-child(3) input[type="checkbox"]');
           if (fileToggle) {
+            console.log('File sharing toggle found, adding event listener');
             fileToggle.addEventListener('change', (e) => {
+              console.log('File sharing toggle changed:', e.target.checked);
               this.updatePermission('fileSharing', e.target.checked);
             });
           }
@@ -658,13 +662,18 @@
           // Emoji reactions toggle
           const emojiToggle = document.querySelector('#chat .setting-item:nth-child(4) input[type="checkbox"]');
           if (emojiToggle) {
+            console.log('Emoji reactions toggle found, adding event listener');
             emojiToggle.addEventListener('change', (e) => {
+              console.log('Emoji reactions toggle changed:', e.target.checked);
               this.updatePermission('emojiReactions', e.target.checked);
             });
           }
+          
+          console.log('Permission controls setup completed');
         }
 
         updatePermission(permissionType, enabled) {
+          console.log(`Updating permission ${permissionType} to ${enabled}`);
           this.meetingPermissions[permissionType] = enabled;
           
           // Send permission update to server
@@ -685,22 +694,26 @@
         }
 
         updatePermissionControls() {
+          console.log('Updating permission controls with:', this.meetingPermissions);
           // Update chat toggle
-          const chatToggle = document.querySelector('#chat input[type="checkbox"]:first-of-type');
+          const chatToggle = document.querySelector('#chat .setting-item:first-child input[type="checkbox"]');
           if (chatToggle) {
             chatToggle.checked = this.meetingPermissions.chatEnabled;
+            console.log('Chat toggle updated to:', chatToggle.checked);
           }
 
           // Update file sharing toggle
           const fileToggle = document.querySelector('#chat .setting-item:nth-child(3) input[type="checkbox"]');
           if (fileToggle) {
             fileToggle.checked = this.meetingPermissions.fileSharing;
+            console.log('File sharing toggle updated to:', fileToggle.checked);
           }
 
           // Update emoji reactions toggle
           const emojiToggle = document.querySelector('#chat .setting-item:nth-child(4) input[type="checkbox"]');
           if (emojiToggle) {
             emojiToggle.checked = this.meetingPermissions.emojiReactions;
+            console.log('Emoji reactions toggle updated to:', emojiToggle.checked);
           }
         }
 
