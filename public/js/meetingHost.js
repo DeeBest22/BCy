@@ -412,6 +412,12 @@
           this.searchTerm = '';
           this.reactionManager = null;
           
+          this.meetingPermissions = {
+            chatEnabled: true,
+            fileSharing: true,
+            emojiReactions: true
+          };
+          
         this.init().then(() => {
   // Store global references after initialization
   window.hostMeetingInstance = this;
@@ -424,6 +430,7 @@
           await this.getUserName();
           this.setupSocketListeners();
           this.setupEventListeners();
+          this.setupPermissionControls();
           this.updateTime();
           this.joinMeeting();
           this.showMeetingInfo();
@@ -479,6 +486,10 @@
           this.socket.on('joined-meeting', (data) => {
             console.log('Joined meeting as host:', data);
             this.updateParticipants(data.participants);
+            if (data.permissions) {
+              this.meetingPermissions = data.permissions;
+              this.updatePermissionControls();
+            }
             this.updateMeetingTitle();
             this.updateRaisedHands(data.raisedHands);
           });
@@ -549,6 +560,13 @@
               this.reactionManager.updateHandRaised(data.socketId, data.participantName, false);
             }
           });
+
+          // Permission update confirmation
+          this.socket.on('meeting-permissions-updated', (data) => {
+            console.log('Meeting permissions updated:', data);
+            this.meetingPermissions = data.permissions;
+            this.showToast(`Meeting permissions updated by ${data.changedBy}`);
+          });
         }
 
         setupEventListeners() {
@@ -618,6 +636,72 @@
               this.closeParticipantsPanel();
             }
           });
+        }
+
+        setupPermissionControls() {
+          // Chat enable/disable toggle
+          const chatToggle = document.querySelector('#chat input[type="checkbox"]:first-of-type');
+          if (chatToggle) {
+            chatToggle.addEventListener('change', (e) => {
+              this.updatePermission('chatEnabled', e.target.checked);
+            });
+          }
+
+          // File sharing toggle
+          const fileToggle = document.querySelector('#chat .setting-item:nth-child(3) input[type="checkbox"]');
+          if (fileToggle) {
+            fileToggle.addEventListener('change', (e) => {
+              this.updatePermission('fileSharing', e.target.checked);
+            });
+          }
+
+          // Emoji reactions toggle
+          const emojiToggle = document.querySelector('#chat .setting-item:nth-child(4) input[type="checkbox"]');
+          if (emojiToggle) {
+            emojiToggle.addEventListener('change', (e) => {
+              this.updatePermission('emojiReactions', e.target.checked);
+            });
+          }
+        }
+
+        updatePermission(permissionType, enabled) {
+          this.meetingPermissions[permissionType] = enabled;
+          
+          // Send permission update to server
+          this.socket.emit('update-meeting-permissions', {
+            permissions: this.meetingPermissions
+          });
+
+          // Show feedback to host
+          const permissionNames = {
+            chatEnabled: 'Chat',
+            fileSharing: 'File Sharing',
+            emojiReactions: 'Emoji Reactions'
+          };
+          
+          this.showToast(
+            `${permissionNames[permissionType]} ${enabled ? 'enabled' : 'disabled'} for all participants`
+          );
+        }
+
+        updatePermissionControls() {
+          // Update chat toggle
+          const chatToggle = document.querySelector('#chat input[type="checkbox"]:first-of-type');
+          if (chatToggle) {
+            chatToggle.checked = this.meetingPermissions.chatEnabled;
+          }
+
+          // Update file sharing toggle
+          const fileToggle = document.querySelector('#chat .setting-item:nth-child(3) input[type="checkbox"]');
+          if (fileToggle) {
+            fileToggle.checked = this.meetingPermissions.fileSharing;
+          }
+
+          // Update emoji reactions toggle
+          const emojiToggle = document.querySelector('#chat .setting-item:nth-child(4) input[type="checkbox"]');
+          if (emojiToggle) {
+            emojiToggle.checked = this.meetingPermissions.emojiReactions;
+          }
         }
 
         updateRaisedHands(raisedHands) {

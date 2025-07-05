@@ -25,6 +25,11 @@ class Meeting {
     this.raisedHands = new Set();
     this.iceServers = this.getICEServers();
     this.isLocked = false; // New property for meeting lock status
+    this.permissions = {
+      chatEnabled: true,
+      fileSharing: true,
+      emojiReactions: true
+    };
   }
 
   getICEServers() {
@@ -249,6 +254,15 @@ class Meeting {
     this.isLocked = false;
   }
 
+  // New methods for permission management
+  updatePermissions(permissions) {
+    this.permissions = { ...this.permissions, ...permissions };
+  }
+
+  getPermissions() {
+    return this.permissions;
+  }
+
   isParticipantAllowed(socketId) {
     // Allow if meeting is not locked or if participant is already in the meeting
     return !this.isLocked || this.participants.has(socketId);
@@ -384,6 +398,7 @@ export const setupSocketIO = (server) => {
         raisedHands: meeting.getRaisedHands(),
         iceServers: meeting.iceServers,
         isLocked: meeting.isLocked
+        permissions: meeting.getPermissions()
       });
 
       console.log(`Host ${hostName} created meeting ${meetingId}`);
@@ -422,6 +437,7 @@ export const setupSocketIO = (server) => {
         raisedHands: meeting.getRaisedHands(),
         iceServers: meeting.iceServers,
         isLocked: meeting.isLocked
+        permissions: meeting.getPermissions()
       });
 
       socket.to(meetingId).emit('participant-joined', {
@@ -458,6 +474,30 @@ export const setupSocketIO = (server) => {
       });
 
       console.log(`Meeting ${participantInfo.meetingId} ${isLocked ? 'locked' : 'unlocked'} by ${socket.id}`);
+    });
+
+    // New socket event for updating meeting permissions
+    socket.on('update-meeting-permissions', (data) => {
+      const { permissions } = data;
+      const participantInfo = participants.get(socket.id);
+      
+      if (!participantInfo) return;
+      
+      const meeting = meetings.get(participantInfo.meetingId);
+      if (!meeting || !meeting.canPerformHostAction(socket.id)) {
+        socket.emit('action-error', { message: 'Only host can update meeting permissions' });
+        return;
+      }
+
+      meeting.updatePermissions(permissions);
+
+      // Notify all participants about the permission changes
+      io.to(participantInfo.meetingId).emit('meeting-permissions-updated', {
+        permissions: meeting.getPermissions(),
+        changedBy: meeting.participants.get(socket.id)?.name
+      });
+
+      console.log(`Meeting ${participantInfo.meetingId} permissions updated by ${socket.id}:`, permissions);
     });
 
     socket.on('participant-ready', () => {

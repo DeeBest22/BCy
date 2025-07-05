@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentGroupId = null;
     let files = [];
     let groups = [];
+    let meetingPermissions = { fileSharing: true };
     
     // API endpoints
     const API_URL = '/api';
@@ -31,6 +32,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the app
     initApp();
+
+    // Listen for meeting permission updates
+    if (typeof io !== 'undefined') {
+        const socket = io();
+        socket.on('meeting-permissions-updated', (data) => {
+            meetingPermissions = data.permissions;
+            updateFileShareControls();
+            showNotification(`File sharing ${data.permissions.fileSharing ? 'enabled' : 'disabled'} by ${data.changedBy}`, 'info');
+        });
+    }
 
     // Event listeners
     floatingBtn.addEventListener('click', openModal);
@@ -54,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Open/close main modal
     function openModal() {
+        if (!meetingPermissions.fileSharing) {
+            showNotification('File sharing is disabled by the host', 'error');
+            return;
+        }
         modal.style.display = 'flex';
         refreshFilesList();
     }
@@ -182,6 +197,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Upload files with progress tracking
 async function uploadFiles(e) {
     e.preventDefault();
+    
+    if (!meetingPermissions.fileSharing) {
+        showNotification('File sharing is disabled by the host', 'error');
+        return;
+    }
     
     if (fileInput.files.length === 0) {
         showNotification('Please select files to upload', 'error');
@@ -425,3 +445,12 @@ async function uploadFiles(e) {
         }, 3000);
     }
 });
+    // Update file share controls based on permissions
+    function updateFileShareControls() {
+        if (floatingBtn) {
+            floatingBtn.disabled = !meetingPermissions.fileSharing;
+            floatingBtn.style.opacity = meetingPermissions.fileSharing ? '1' : '0.5';
+            floatingBtn.title = meetingPermissions.fileSharing ? 
+                'Share files' : 'File sharing disabled by host';
+        }
+    }

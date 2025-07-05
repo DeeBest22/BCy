@@ -11,6 +11,7 @@ class ChatApp {
     this.editingMessageId = null;
     this.editingChatId = null;
     this.currentConfig = { chatEnabled: true, generalOnly: false, allowGroupCreation: true };
+    this.meetingPermissions = { chatEnabled: true, fileSharing: true, emojiReactions: true };
     this.mediaRecorder = null;
     this.recordedChunks = [];
     this.isRecording = false;
@@ -72,6 +73,12 @@ async fetchUserName() {
         
         // Configuration
         this.socket.on('configChanged', (config) => this.handleConfigChanged(config));
+        
+        // Meeting permissions
+        this.socket.on('meeting-permissions-updated', (data) => this.handleMeetingPermissionsChanged(data));
+        
+        // Meeting permissions
+        this.socket.on('meeting-permissions-updated', (data) => this.handleMeetingPermissionsChanged(data));
     }
 
     setupEventListeners() {
@@ -95,6 +102,10 @@ async fetchUserName() {
         
         // File upload
         document.getElementById('fileButton').addEventListener('click', () => {
+            if (!this.meetingPermissions.fileSharing) {
+                this.showNotification('File sharing is disabled by the host', 'error');
+                return;
+            }
             document.getElementById('fileUpload').click();
         });
         
@@ -104,6 +115,10 @@ async fetchUserName() {
         
         // Voice recording
         document.getElementById('recordButton').addEventListener('click', () => {
+            if (!this.meetingPermissions.fileSharing) {
+                this.showNotification('File sharing is disabled by the host', 'error');
+                return;
+            }
             this.toggleRecording();
         });
         
@@ -115,6 +130,10 @@ async fetchUserName() {
         
         // chatEmoji picker toggle
         document.querySelector('.chatEmoji-trigger').addEventListener('click', (e) => {
+            if (!this.meetingPermissions.emojiReactions) {
+                this.showNotification('Emoji reactions are disabled by the host', 'error');
+                return;
+            }
             e.stopPropagation();
             this.togglechatEmojiPicker();
         });
@@ -474,7 +493,12 @@ async fetchUserName() {
         const messageInput = document.getElementById('messageInput');
         const messageText = messageInput.innerHTML.trim();
         
-        if (!messageText || !this.currentConfig.chatEnabled) return;
+        if (!messageText || !this.currentConfig.chatEnabled || !this.meetingPermissions.chatEnabled) {
+            if (!this.meetingPermissions.chatEnabled) {
+                this.showNotification('Chat is disabled by the host', 'error');
+            }
+            return;
+        }
 
         const id = Date.now() + '-' + Math.floor(Math.random() * 1000);
         
@@ -640,6 +664,11 @@ async fetchUserName() {
 
     // File Upload Methods
     handleFileUpload(event) {
+        if (!this.meetingPermissions.fileSharing) {
+            this.showNotification('File sharing is disabled by the host', 'error');
+            return;
+        }
+        
         const file = event.target.files[0];
         if (!file) return;
 
@@ -702,7 +731,12 @@ async fetchUserName() {
 
     // Voice Recording Methods
     toggleRecording() {
-        if (!this.currentConfig.chatEnabled) return;
+        if (!this.currentConfig.chatEnabled || !this.meetingPermissions.fileSharing) {
+            if (!this.meetingPermissions.fileSharing) {
+                this.showNotification('File sharing is disabled by the host', 'error');
+            }
+            return;
+        }
         
         if (!this.isRecording) {
             this.startRecording();
@@ -1088,6 +1122,59 @@ async fetchUserName() {
 
         groupCreateBtn.style.display = config.allowGroupCreation ? 'flex' : 'none';
         this.renderChatHistory(this.selectedChat);
+    }
+
+    // Handle meeting permissions changes
+    handleMeetingPermissionsChanged(data) {
+        this.meetingPermissions = data.permissions;
+        this.updateChatControls();
+        this.showNotification(`Meeting permissions updated by ${data.changedBy}`, 'info');
+    }
+
+    updateChatControls() {
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+        const fileButton = document.getElementById('fileButton');
+        const recordButton = document.getElementById('recordButton');
+        const emojiTrigger = document.querySelector('.chatEmoji-trigger');
+
+        // Update chat controls
+        if (!this.meetingPermissions.chatEnabled) {
+            messageInput.contentEditable = false;
+            sendButton.disabled = true;
+            messageInput.style.opacity = '0.5';
+            sendButton.style.opacity = '0.5';
+            messageInput.setAttribute('placeholder', 'Chat is disabled by the host');
+        } else {
+            messageInput.contentEditable = true;
+            sendButton.disabled = false;
+            messageInput.style.opacity = '1';
+            sendButton.style.opacity = '1';
+            messageInput.setAttribute('placeholder', 'Type your message...');
+        }
+
+        // Update file sharing controls
+        if (fileButton) {
+            fileButton.disabled = !this.meetingPermissions.fileSharing;
+            fileButton.style.opacity = this.meetingPermissions.fileSharing ? '1' : '0.5';
+            fileButton.title = this.meetingPermissions.fileSharing ? 
+                'Upload file' : 'File sharing disabled by host';
+        }
+
+        if (recordButton) {
+            recordButton.disabled = !this.meetingPermissions.fileSharing;
+            recordButton.style.opacity = this.meetingPermissions.fileSharing ? '1' : '0.5';
+            recordButton.title = this.meetingPermissions.fileSharing ? 
+                'Record voice message' : 'Voice recording disabled by host';
+        }
+
+        // Update emoji controls
+        if (emojiTrigger) {
+            emojiTrigger.disabled = !this.meetingPermissions.emojiReactions;
+            emojiTrigger.style.opacity = this.meetingPermissions.emojiReactions ? '1' : '0.5';
+            emojiTrigger.title = this.meetingPermissions.emojiReactions ? 
+                'Add emoji' : 'Emoji reactions disabled by host';
+        }
     }
 
     // Utility Methods
